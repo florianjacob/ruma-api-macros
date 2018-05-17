@@ -269,18 +269,22 @@ impl ToTokens for Api {
                 #[allow(unused_variables)]
                 fn future_from(hyper_response: ::hyper::Response)
                 -> Box<_Future<Item = Self, Error = Self::Error>> {
-                    #extract_headers
+                    if hyper_response.status().is_success() {
+                        #extract_headers
 
-                    #deserialize_response_body
+                        #deserialize_response_body
 
-                    let response = Response {
-                        #response_init_fields
-                    };
+                        let response = Response {
+                            #response_init_fields
+                        };
 
-                    Ok(response)
-                    #closure_end
+                        Ok(response)
+                        #closure_end
 
-                    Box::new(future_response)
+                        Box::new(future_response)
+                    } else {
+                        Box::new(::futures::future::err(::ruma_api::Error::StatusCode(hyper_response.status().clone())))
+                    }
                 }
             }
 
